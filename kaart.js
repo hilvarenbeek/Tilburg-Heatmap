@@ -1,6 +1,6 @@
 var map;
 // nummers van de meetstations (op de sticker gezet bij de workshops)
-var meetjestadIds = ["251", "403", "410", "427", "430", "437", "486", "492", "493", "494", "499"];
+var meetjestadIds = ["251", "403", "410", "424", "427", "430", "437", "486", "492", "493", "494", "499"];
 var meetWaarden = [];
 
 function Kaart() {
