@@ -1,28 +1,19 @@
 var map;
-var meetjestadIds = "251,403,430,437,492,493,494,499"; // nummers van de meetstations (op de sticker gezet bij de workshops)
+// nummers van de meetstations (op de sticker gezet bij de workshops)
+var meetjestadIds = ["251", "403", "410", "427", "430", "437", "486", "492", "493", "494", "499"];
 var meetWaarden = [];
 
 function Kaart() {
     var map = Initmap();
 
-    // gisteren = nu - (24 uur * 60 minuten * 60 seconden * 1000 milliseconden)
-    let yesterday = new Date(Date.now() - (24 * 60 * 60 * 1000));
-    // een kwartier zou van elk actief station 1 meting moeten geven
-    let beginDate = yesterday;
-    let endDate = new Date(Date.now() - ((24 * 60) - 15) * 60 * 1000);
-    // getMonth is 0-based, dus januari = 0, december = 11
-    let dataSince = beginDate.getFullYear() + "-" + (beginDate.getMonth() + 1) + "-" + beginDate.getDate() + "," + beginDate.getHours() + ":" + beginDate.getMinutes();
-    let dataUntil = endDate.getFullYear() + "-" + (endDate.getMonth() + 1) + "-" + endDate.getDate() + "," + endDate.getHours() + ":" + endDate.getMinutes();
-    console.log(dataSince);
-    // Had een probleem met ophalen data vanuit script, work-around via een CORS proxy
-    let url = 'http://cors-anywhere.herokuapp.com/http://meetjestad.net/data?type=sensors&ids=' + meetjestadIds + '&format=csv&start=' + dataSince;
-    if (dataUntil) { url += '&end=' + dataUntil; }
+    let url = 'https://meetjestad.net/data/sensors_json.php';
+
     var xhr = new XMLHttpRequest();
     xhr.open("GET", url, true);
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4) {
-            csvData = xhr.responseText;
-            Datalaag(map);
+            let jsonData = xhr.responseText;
+            Datalaag(jsonData);
         }
     }
     xhr.send();
@@ -34,22 +25,22 @@ function Initmap() {
     map.addLayer(osm);
 }
 
-function Datalaag() {
-    let metingen = csvData.split("\n"); // CSV data splitsen in regels
-    metingen.shift(); // header regel verwijderen
-    metingen.pop(); // laatste (lege) regel verwijderen
+function Datalaag(jsonData) {
     var minTemp, maxTemp;
-    for (meting in metingen) {
-        let meetGegevens = metingen[meting].split("\t");
-        let temp = parseFloat(meetGegevens[4]);
-        if ((!minTemp) || (temp < minTemp)) { minTemp = temp };
-        if ((!maxTemp) || (temp > maxTemp)) { maxTemp = temp };
-        meetWaarden.push({ lat: meetGegevens[3], long: meetGegevens[2], temp: temp });
-    }
+    let metingen = JSON.parse(jsonData);
+    metingen.features.forEach(meting => {
+
+        // alleen meetellen als id in het lijstje van Tilburg staat
+        if (meetjestadIds.includes(meting.properties.id)) {
+            let temp = parseFloat(meting.properties.temperature);
+            if ((!minTemp) || (temp < minTemp)) { minTemp = temp };
+            if ((!maxTemp) || (temp > maxTemp)) { maxTemp = temp };
+            meetWaarden.push({ lat: meting.geometry.coordinates[1], long: meting.geometry.coordinates[0], temp: temp });
+        }
+    })
 
     // cirkels met kleur op basis van meetwaarde
     meetWaarden.forEach(meetwaarde => {
-        console.log(meetwaarde);
         heatColor = CalcHeatColor(meetwaarde.temp, minTemp, maxTemp);
 
         L.circle([meetwaarde.lat, meetwaarde.long], {
