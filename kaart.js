@@ -1,8 +1,10 @@
 var map;
 var meetjestadIds = "251,403,430,437,492,493,494,499"; // nummers van de meetstations (op de sticker gezet bij de workshops)
+var meetWaarden = [];
 
 function Kaart() {
     var map = Initmap();
+
     // gisteren = nu - (24 uur * 60 minuten * 60 seconden * 1000 milliseconden)
     let yesterday = new Date(Date.now() - (24 * 60 * 60 * 1000));
     // een kwartier zou van elk actief station 1 meting moeten geven
@@ -33,33 +35,38 @@ function Initmap() {
 }
 
 function Datalaag() {
-    var metingen = csvData.split("\n"); // CSV data splitsen in regels
+    let metingen = csvData.split("\n"); // CSV data splitsen in regels
     metingen.shift(); // header regel verwijderen
     metingen.pop(); // laatste (lege) regel verwijderen
-
+    var minTemp, maxTemp;
     for (meting in metingen) {
-        meetGegevens = metingen[meting].split("\t");
-        var lat = meetGegevens[3];
-        var long = meetGegevens[2];
-        var temp = meetGegevens[4];
+        let meetGegevens = metingen[meting].split("\t");
+        let temp = parseFloat(meetGegevens[4]);
+        if ((!minTemp) || (temp < minTemp)) { minTemp = temp };
+        if ((!maxTemp) || (temp > maxTemp)) { maxTemp = temp };
+        meetWaarden.push({ lat: meetGegevens[3], long: meetGegevens[2], temp: temp });
+    }
 
-        //        console.log(temp);
-        heatColor = CalcHeatColor(temp);
-        //        console.log(heatColor);
+    // cirkels met kleur op basis van meetwaarde
+    meetWaarden.forEach(meetwaarde => {
+        console.log(meetwaarde);
+        heatColor = CalcHeatColor(meetwaarde.temp, minTemp, maxTemp);
 
-        var circle = L.circle([lat, long], {
+        L.circle([meetwaarde.lat, meetwaarde.long], {
             color: heatColor,
             fillColor: heatColor,
             fillOpacity: 0.5,
             radius: 500
         }).addTo(map);
-    }
+    })
 }
 
-function CalcHeatColor(temp) {
-    if (temp < -20) temp = -20;
-    if (temp > 40) temp = 40;
-    var h = Math.round(250 - ((Math.round(temp) + 20) * (250 / 60)));
+function CalcHeatColor(temp, min, max) {
+    // verschil tussen laagste en hoogste temperatuur
+    let range = Math.round(max * 100) - Math.round(min * 100);
+    // kleur is in HSL, H waarde 0=rood, 250=diepblauw
+    var h = 250 - (Math.round(temp * 100) - Math.round(min * 100)) * (250 / range);
+    // S=verzadiging (grijs tot pure kleur), L=Lightness (zwart via pure kleur naar wit)
     var hsl = { h: h, s: 100, l: 50 };
     return Color().fromHsl(hsl).toString();
 }
