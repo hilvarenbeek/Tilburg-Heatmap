@@ -11,10 +11,13 @@ function drawVoronoi() {
         ]);
 
     let points = [];
-    meetWaarden.forEach(w =>
-        points.push([map.latLngToLayerPoint([w.lat, w.long]).x, map.latLngToLayerPoint([w.lat, w.long]).y, calcHeatColor(w.temp, minTemp, maxTemp)]));
-
-    console.log(points);
+    if (showTemp) {
+        meetWaarden.forEach(w =>
+            points.push([map.latLngToLayerPoint([w.lat, w.long]).x, map.latLngToLayerPoint([w.lat, w.long]).y, calcHeatColor(w.temp, minTemp, maxTemp)]));
+    } else { // assume showHumidity
+        meetWaarden.forEach(w =>
+            points.push([map.latLngToLayerPoint([w.lat, w.long]).x, map.latLngToLayerPoint([w.lat, w.long]).y, calcHumidityColor(w.humidity)]));
+    }
 
     voronoiLayer.selectAll(".point")
         .data(points)
@@ -26,8 +29,6 @@ function drawVoronoi() {
 
     let polygons = voronoi(points).polygons();
 
-    console.log(polygons);
-
     voronoiLayer.selectAll(".cell")
         .data(polygons)
         .enter()
@@ -35,6 +36,6 @@ function drawVoronoi() {
         .attr("class", "cell")
         .attr("fill", d => { if (d != null) { return d.data[2]; } })
         .attr("fill-opacity", ".5")
-        .attr("stroke", "black")
+        .attr("stroke", "none")
         .attr("d", d => { if (d != null) { return `M${d.join("L")}Z`; } });
 }

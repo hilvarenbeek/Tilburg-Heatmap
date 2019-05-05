@@ -1,8 +1,17 @@
-var map;
 // nummers van de meetstations (op de sticker gezet bij de workshops)
-var meetjestadIds = ["251", "403", "410", "424", "427", "430", "437", "486", "492", "493", "494", "499"];
-// tilburgOnly=false om alle Meet je Stad meetstations te zien.
-var tilburgOnly = true;
+const meetjestadIds = ["251", "401", "403", "410", "424", "427", "430", "437", "486", "492", "493", "494", "495", "499"];
+// handige coordinaten om de kaart op te centreren
+const centerAmersfoort = new L.LatLng(52.1568, 5.38391),
+    centerTilburg = new L.LatLng(51.5554, 5.0824);
+
+const center = centerTilburg,
+    zoomLevel = 13;
+const showTemp = true,
+    showHumidity = false;
+// tilburgOnly=false om alle Meet je Stad meetstations te zien en mee te tellen in berekeningen.
+const tilburgOnly = true;
+
+var map;
 var meetWaarden = [];
 var minTemp, maxTemp;
 
@@ -17,8 +26,8 @@ function kaart() {
         if (xhr.readyState === 4) {
             let jsonData = xhr.responseText;
             datalaag(jsonData);
-            addHeatLegend();
-            addHumidityLegend();
+            if (showTemp) addHeatLegend();
+            if (showHumidity) addHumidityLegend();
             drawVoronoi();
         }
     }
@@ -27,7 +36,7 @@ function kaart() {
 
 function initmap() {
     let osm = new L.StamenTileLayer("toner-lite");
-    map = new L.Map('map', { center: new L.LatLng(51.5554, 5.0824), zoom: 13 });
+    map = new L.Map('map', { center: center, zoom: zoomLevel });
     map.addLayer(osm);
     // SVG laag toevoegen aan Leaflet, hier kan D3 op tekenen
     let d3Layer = L.svg();
@@ -101,32 +110,36 @@ function redrawD3Layer() {
 }
 
 function drawD3Layer(map, meetWaarden) {
-    d3.select("#map")
-        .select("svg")
-        .selectAll("myCircles")
-        .data(meetWaarden)
-        .enter()
-        .append("circle")
-        .attr("cx", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).x })
-        .attr("cy", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).y })
-        .attr("r", 40)
-        .style("fill", function(d) { return calcHumidityColor(d.humidity) })
-        .attr("stroke", function(d) { return calcHumidityColor(d.humidity) })
-        .attr("stroke-width", 1)
-        .attr("fill-opacity", .6);
-    d3.select("#map")
-        .select("svg")
-        .selectAll("myCircles")
-        .data(meetWaarden)
-        .enter()
-        .append("circle")
-        .attr("cx", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).x })
-        .attr("cy", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).y })
-        .attr("r", 14)
-        .style("fill", function(d) { return calcHeatColor(d.temp, minTemp, maxTemp) })
-        .attr("stroke", function(d) { return calcHeatColor(d.temp, minTemp, maxTemp) })
-        .attr("stroke-width", 3)
-        .attr("fill-opacity", .4);
+    if (showHumidity) {
+        d3.select("#map")
+            .select("svg")
+            .selectAll("myCircles")
+            .data(meetWaarden)
+            .enter()
+            .append("circle")
+            .attr("cx", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).x })
+            .attr("cy", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).y })
+            .attr("r", 10)
+            .style("fill", function(d) { return calcHumidityColor(d.humidity) })
+            .attr("stroke", function(d) { return calcHumidityColor(d.humidity) })
+            .attr("stroke-width", 1)
+            .attr("fill-opacity", .6);
+    }
+    if (showTemp) {
+        d3.select("#map")
+            .select("svg")
+            .selectAll("myCircles")
+            .data(meetWaarden)
+            .enter()
+            .append("circle")
+            .attr("cx", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).x })
+            .attr("cy", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).y })
+            .attr("r", 6)
+            .style("fill", function(d) { return calcHeatColor(d.temp, minTemp, maxTemp) })
+            .attr("stroke", function(d) { return calcHeatColor(d.temp, minTemp, maxTemp) })
+            .attr("stroke-width", 3)
+            .attr("fill-opacity", .4);
+    }
 
     function updateD3() {
         d3.selectAll("circle")
