@@ -19,6 +19,7 @@ function kaart() {
             datalaag(jsonData);
             addHeatLegend();
             addHumidityLegend();
+            drawVoronoi();
         }
     }
     xhr.send();
@@ -85,7 +86,10 @@ function datalaag(jsonData) {
             let humidity = parseFloat(meting.properties.humidity);
             if ((!minTemp) || (temp < minTemp)) { minTemp = temp };
             if ((!maxTemp) || (temp > maxTemp)) { maxTemp = temp };
-            meetWaarden.push({ lat: meting.geometry.coordinates[1], long: meting.geometry.coordinates[0], temp: temp, humidity: humidity });
+            // controleer of positie gevuld is, anders niet toevoegen
+            if (meting.geometry.coordinates[1]) {
+                meetWaarden.push({ coords: meting.geometry.coordinates, lat: meting.geometry.coordinates[1], long: meting.geometry.coordinates[0], temp: temp, humidity: humidity });
+            }
         }
     })
 
