@@ -1,6 +1,8 @@
 var map;
 // nummers van de meetstations (op de sticker gezet bij de workshops)
 var meetjestadIds = ["251", "403", "410", "424", "427", "430", "437", "486", "492", "493", "494", "499"];
+// tilburgOnly=false om alle Meet je Stad meetstations te zien.
+var tilburgOnly = true;
 var meetWaarden = [];
 var minTemp, maxTemp;
 
@@ -15,7 +17,8 @@ function kaart() {
         if (xhr.readyState === 4) {
             let jsonData = xhr.responseText;
             datalaag(jsonData);
-            addLegend();
+            addHeatLegend();
+            addHumidityLegend();
         }
     }
     xhr.send();
@@ -37,25 +40,39 @@ function initmap() {
     map.attributionControl.addAttribution('Data points from <a href="http://meetjestad.net/">Meet je Stad</a>');
 }
 
-function addLegend() {
+function addHeatLegend() {
     let legend = L.control({ position: 'bottomleft' });
     legend.onAdd = function(map) {
         let div = L.DomUtil.create('div', 'info legend');
         // verschil tussen laagste en hoogste temperatuur
         let range = (Math.round(maxTemp * 100) - Math.round(minTemp * 100)) / 100;
         let step = range / 10;
-
         for (var i = 0; i < 10; i++) {
             div.innerHTML +=
                 '<i style="background:' + calcHeatColor(i, 0, 10) + '"></i>' +
                 (Math.round((minTemp + (i * step)) * 100)) / 100 +
-                '<br/>';
+                ' ℃<br/>';
         }
-
         return div;
     };
-
     legend.addTo(map);
+}
+
+function addHumidityLegend() {
+    let humLegend = L.control({ position: 'bottomleft' });
+    humLegend.onAdd = function(map) {
+        let div = L.DomUtil.create('div', 'humidity legend');
+        let range = 100;
+        let step = range / 10;
+        for (var i = 0; i < 10; i++) {
+            div.innerHTML +=
+                '<i style="background:' + calcHumidityColor(i * step) + '"></i>' +
+                (Math.round(i * step)) +
+                '%<br/>';
+        }
+        return div;
+    };
+    humLegend.addTo(map);
 }
 
 function datalaag(jsonData) {
@@ -63,7 +80,7 @@ function datalaag(jsonData) {
     metingen.features.forEach(meting => {
 
         // alleen meetellen als id in het lijstje van Tilburg staat
-        if (meetjestadIds.includes(meting.properties.id)) {
+        if (!tilburgOnly || meetjestadIds.includes(meting.properties.id)) {
             let temp = parseFloat(meting.properties.temperature);
             let humidity = parseFloat(meting.properties.humidity);
             if ((!minTemp) || (temp < minTemp)) { minTemp = temp };
@@ -128,7 +145,8 @@ function calcHeatColor(temp, min, max) {
 
 function calcHumidityColor(humidity) {
     if (humidity > 100) { humidity = 100 };
-    let sat = Math.floor(humidity);
-    let hsl = { h: 240, s: sat, l: 50 };
+    let hue = 100 + ((Math.round(humidity) * 1.4));
+    let sat = 50 + Math.floor(humidity / 2);
+    let hsl = { h: hue, s: sat, l: 50 };
     return Color().fromHsl(hsl).toString();
 }

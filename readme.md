@@ -2,6 +2,9 @@
 
 HTML + CSS + Javascript to create a map of the Tilburg, Netherlands area with data from Meetjestad.net sensors.
 
+You can run this locally, on your own web server, or point your browser at:
+http://www.marcovandenhout.nl/Tilburg-Heatmap/
+
 ## Uses:
 * Measurement data from Meet je Stad Tilburg (http://meetjestad.net)
 * Leaflet (https://leafletjs.com) for rendering the map
