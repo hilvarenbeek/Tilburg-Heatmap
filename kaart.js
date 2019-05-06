@@ -1,8 +1,18 @@
-var map;
 // nummers van de meetstations (op de sticker gezet bij de workshops)
-var meetjestadIds = ["251", "403", "410", "424", "427", "430", "437", "486", "492", "493", "494", "499"];
-// tilburgOnly=false om alle Meet je Stad meetstations te zien.
-var tilburgOnly = true;
+const meetjestadIds = ["251", "286", "401", "403", "410", "424", "427", "430", "437", "486", "492", "493", "494", "495", "499"];
+// handige coordinaten om de kaart op te centreren
+const centerAmersfoort = new L.LatLng(52.1568, 5.38391),
+    centerTilburg = new L.LatLng(51.5554, 5.0824);
+
+const center = centerTilburg,
+    zoomLevel = 13;
+const showTemp = true,
+    showHumidity = true,
+    showVoronoi = true;
+// tilburgOnly=false om alle Meet je Stad meetstations te zien en mee te tellen in berekeningen.
+const tilburgOnly = true;
+
+var map;
 var meetWaarden = [];
 var minTemp, maxTemp;
 
@@ -17,8 +27,9 @@ function kaart() {
         if (xhr.readyState === 4) {
             let jsonData = xhr.responseText;
             datalaag(jsonData);
-            addHeatLegend();
-            addHumidityLegend();
+            if (showTemp) addHeatLegend();
+            if ((showHumidity) || (!showTemp && showVoronoi)) addHumidityLegend();
+            if (showVoronoi) drawVoronoi();
         }
     }
     xhr.send();
@@ -26,7 +37,7 @@ function kaart() {
 
 function initmap() {
     let osm = new L.StamenTileLayer("toner-lite");
-    map = new L.Map('map', { center: new L.LatLng(51.5554, 5.0824), zoom: 13 });
+    map = new L.Map('map', { center: center, zoom: zoomLevel });
     map.addLayer(osm);
     // SVG laag toevoegen aan Leaflet, hier kan D3 op tekenen
     let d3Layer = L.svg();
@@ -85,7 +96,10 @@ function datalaag(jsonData) {
             let humidity = parseFloat(meting.properties.humidity);
             if ((!minTemp) || (temp < minTemp)) { minTemp = temp };
             if ((!maxTemp) || (temp > maxTemp)) { maxTemp = temp };
-            meetWaarden.push({ lat: meting.geometry.coordinates[1], long: meting.geometry.coordinates[0], temp: temp, humidity: humidity });
+            // controleer of positie gevuld is, anders niet toevoegen
+            if (meting.geometry.coordinates[1]) {
+                meetWaarden.push({ coords: meting.geometry.coordinates, lat: meting.geometry.coordinates[1], long: meting.geometry.coordinates[0], temp: temp, humidity: humidity });
+            }
         }
     })
 
@@ -97,40 +111,113 @@ function redrawD3Layer() {
 }
 
 function drawD3Layer(map, meetWaarden) {
-    d3.select("#map")
-        .select("svg")
-        .selectAll("myCircles")
-        .data(meetWaarden)
-        .enter()
-        .append("circle")
-        .attr("cx", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).x })
-        .attr("cy", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).y })
-        .attr("r", 40)
-        .style("fill", function(d) { return calcHumidityColor(d.humidity) })
-        .attr("stroke", function(d) { return calcHumidityColor(d.humidity) })
-        .attr("stroke-width", 1)
-        .attr("fill-opacity", .6);
-    d3.select("#map")
-        .select("svg")
-        .selectAll("myCircles")
-        .data(meetWaarden)
-        .enter()
-        .append("circle")
-        .attr("cx", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).x })
-        .attr("cy", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).y })
-        .attr("r", 14)
-        .style("fill", function(d) { return calcHeatColor(d.temp, minTemp, maxTemp) })
-        .attr("stroke", function(d) { return calcHeatColor(d.temp, minTemp, maxTemp) })
-        .attr("stroke-width", 3)
-        .attr("fill-opacity", .4);
-
-    function updateD3() {
-        d3.selectAll("circle")
+    if (showHumidity) {
+        d3.select("#map")
+            .select("svg")
+            .selectAll("myCircles")
+            .data(meetWaarden)
+            .enter()
+            .append("circle")
             .attr("cx", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).x })
-            .attr("cy", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).y });
+            .attr("cy", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).y })
+            .attr("r", 20)
+            .style("fill", function(d) { return calcHumidityColor(d.humidity) })
+            .attr("stroke", function(d) { return calcHumidityColor(d.humidity) })
+            .attr("stroke-width", 1)
+            .attr("fill-opacity", .6);
+    }
+    if (showTemp) {
+        d3.select("#map")
+            .select("svg")
+            .selectAll("myCircles")
+            .data(meetWaarden)
+            .enter()
+            .append("circle")
+            .attr("cx", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).x })
+            .attr("cy", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).y })
+            .attr("r", 6)
+            .style("fill", function(d) { return calcHeatColor(d.temp, minTemp, maxTemp) })
+            .attr("stroke", function(d) { return calcHeatColor(d.temp, minTemp, maxTemp) })
+            .attr("stroke-width", 3)
+            .attr("fill-opacity", .4);
     }
 
-    map.on("moveend zoomend", updateD3);
+    function updateD3() {
+        d3.select("#map")
+            .select("svg")
+            .selectAll("circle")
+            .remove();
+
+        redrawD3Layer();
+    }
+
+    function updateVoronoi() {
+        d3.select("#map")
+            .select("svg")
+            .selectAll(".point")
+            .remove();
+        d3.select("#map")
+            .select("svg")
+            .selectAll(".cell")
+            .remove();
+
+        drawVoronoi();
+    }
+
+    function updateD3AndVoronoi() {
+        updateD3();
+        updateVoronoi();
+    }
+
+    map.on("zoomend", updateD3AndVoronoi);
+}
+
+function drawVoronoi() {
+    if (!showVoronoi) { return; }
+
+    var svg = d3.select("svg");
+    var voronoiLayer = svg.append("g");
+
+    const voronoi = d3.voronoi()
+        .extent([
+            // [-1, -1],
+            // [1920 + 1, 1080 + 1]
+            [-2000, -1000],
+            [4000, 2000]
+        ]);
+
+    let points = [];
+    if (showTemp) {
+        meetWaarden.forEach(w =>
+            points.push([map.latLngToLayerPoint([w.lat, w.long]).x, map.latLngToLayerPoint([w.lat, w.long]).y, calcHeatColor(w.temp, minTemp, maxTemp)]));
+    } else { // assume showHumidity
+        meetWaarden.forEach(w =>
+            points.push([map.latLngToLayerPoint([w.lat, w.long]).x, map.latLngToLayerPoint([w.lat, w.long]).y, calcHumidityColor(w.humidity)]));
+    }
+
+    if (!showTemp && !showHumidity) {
+        voronoiLayer.selectAll(".point")
+            .data(points)
+            .enter()
+            .append("circle")
+            .attr("class", "point")
+            .attr("transform", d => `translate(${d[0]}, ${d[1]})`)
+            .attr("fill", d => d[2])
+            .attr("fill-opacity", .6)
+            .attr("r", 10);
+    }
+
+    let polygons = voronoi(points).polygons();
+
+    voronoiLayer.selectAll(".cell")
+        .data(polygons)
+        .enter()
+        .append("path")
+        .attr("class", "cell")
+        .attr("fill", d => { if (d != null) { return d.data[2]; } })
+        .attr("fill-opacity", ".2")
+        .attr("stroke", "none")
+        .attr("d", d => { if (d != null) { return `M${d.join("L")}Z`; } });
 }
 
 function calcHeatColor(temp, min, max) {
