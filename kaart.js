@@ -1,5 +1,5 @@
 // nummers van de meetstations (op de sticker gezet bij de workshops)
-const meetjestadIds = ["251", "286", "401", "403", "410", "424", "427", "430", "437", "486", "492", "493", "494", "495", "499"];
+const meetjestadIds = ["251", "286", "401", "403", "410", "424", "427", "430", "437", "486", "492", "493", "494", "495", "499", "506"];
 // handige coordinaten om de kaart op te centreren
 const centerAmersfoort = new L.LatLng(52.1568, 5.38391),
     centerTilburg = new L.LatLng(51.5554, 5.0824);
