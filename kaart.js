@@ -1,5 +1,5 @@
 // nummers van de meetstations (op de sticker gezet bij de workshops)
-const meetjestadIds = ["251", "286", "401", "403", "410", "424", "427", "430", "437", "486", "492", "493", "494", "495", "499", "506"];
+const meetjestadIds = ["251", "286", "401", "403", "410", "424", "427", "430", "437", "439", "453", "486", "492", "493", "494", "495", "499", "502", "504", "506"];
 // handige coordinaten om de kaart op te centreren
 const centerAmersfoort = new L.LatLng(52.1568, 5.38391),
     centerTilburg = new L.LatLng(51.5554, 5.0824);
@@ -27,9 +27,9 @@ function kaart() {
         if (xhr.readyState === 4) {
             let jsonData = xhr.responseText;
             datalaag(jsonData);
+            if (showVoronoi) drawVoronoi();
             if (showTemp) addHeatLegend();
             if ((showHumidity) || (!showTemp && showVoronoi)) addHumidityLegend();
-            if (showVoronoi) drawVoronoi();
         }
     }
     xhr.send();
@@ -98,7 +98,7 @@ function datalaag(jsonData) {
             if ((!maxTemp) || (temp > maxTemp)) { maxTemp = temp };
             // controleer of positie gevuld is, anders niet toevoegen
             if (meting.geometry.coordinates[1]) {
-                meetWaarden.push({ coords: meting.geometry.coordinates, lat: meting.geometry.coordinates[1], long: meting.geometry.coordinates[0], temp: temp, humidity: humidity });
+                meetWaarden.push({ id: meting.properties.id, coords: meting.geometry.coordinates, lat: meting.geometry.coordinates[1], long: meting.geometry.coordinates[0], temp: temp, humidity: humidity });
             }
         }
     })
@@ -165,8 +165,8 @@ function drawD3Layer(map, meetWaarden) {
     }
 
     function updateD3AndVoronoi() {
-        updateD3();
         updateVoronoi();
+        updateD3();
     }
 
     map.on("zoomend", updateD3AndVoronoi);
