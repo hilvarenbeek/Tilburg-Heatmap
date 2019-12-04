@@ -1,12 +1,13 @@
 // nummers van de meetstations (op de sticker gezet bij de workshops)
 const meetjestadIds = ["251", "286", "369", "379", "388", "401", "403", "410", "413", "424", "427", "430", "437", "439",
-                       "440", "453", "456", "477", "486", "489", "490", "492", "493", "494", "495", "499", "502", "504",
-                       "506", "560", "561", "562", "563", "564"];
+    "440", "453", "456", "477", "486", "489", "490", "492", "493", "494", "495", "499", "502",
+    "504", "506", "507", "560", "561", "562", "563", "564", "599", "600", "602", "604", "605"];
 // handige coordinaten om de kaart op te centreren
 const centerAmersfoort = new L.LatLng(52.1568, 5.38391),
-    centerTilburg = new L.LatLng(51.5554, 5.0824);
+    centerTilburg = new L.LatLng(51.5554, 5.0824),
+    centerTilburgNoord = new L.LatLng(51.572, 5.0824);
 
-const center = centerTilburg,
+const center = centerTilburgNoord,
     zoomLevel = 13;
 const showTemp = true,
     showHumidity = true,
@@ -25,7 +26,7 @@ function kaart() {
 
     var xhr = new XMLHttpRequest();
     xhr.open("GET", url, true);
-    xhr.onreadystatechange = function() {
+    xhr.onreadystatechange = function () {
         if (xhr.readyState === 4) {
             let jsonData = xhr.responseText;
             datalaag(jsonData);
@@ -55,7 +56,7 @@ function initmap() {
 
 function addHeatLegend() {
     let legend = L.control({ position: 'bottomleft' });
-    legend.onAdd = function(map) {
+    legend.onAdd = function (map) {
         let div = L.DomUtil.create('div', 'info legend');
         // verschil tussen laagste en hoogste temperatuur
         let range = (Math.round(maxTemp * 100) - Math.round(minTemp * 100)) / 100;
@@ -73,7 +74,7 @@ function addHeatLegend() {
 
 function addHumidityLegend() {
     let humLegend = L.control({ position: 'bottomleft' });
-    humLegend.onAdd = function(map) {
+    humLegend.onAdd = function (map) {
         let div = L.DomUtil.create('div', 'humidity legend');
         let range = 100;
         let step = range / 10;
@@ -120,11 +121,11 @@ function drawD3Layer(map, meetWaarden) {
             .data(meetWaarden)
             .enter()
             .append("circle")
-            .attr("cx", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).x })
-            .attr("cy", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).y })
+            .attr("cx", function (d) { return map.latLngToLayerPoint([d.lat, d.long]).x })
+            .attr("cy", function (d) { return map.latLngToLayerPoint([d.lat, d.long]).y })
             .attr("r", 20)
-            .style("fill", function(d) { return calcHumidityColor(d.humidity) })
-            .attr("stroke", function(d) { return calcHumidityColor(d.humidity) })
+            .style("fill", function (d) { return calcHumidityColor(d.humidity) })
+            .attr("stroke", function (d) { return calcHumidityColor(d.humidity) })
             .attr("stroke-width", 1)
             .attr("fill-opacity", .6);
     }
@@ -135,11 +136,11 @@ function drawD3Layer(map, meetWaarden) {
             .data(meetWaarden)
             .enter()
             .append("circle")
-            .attr("cx", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).x })
-            .attr("cy", function(d) { return map.latLngToLayerPoint([d.lat, d.long]).y })
+            .attr("cx", function (d) { return map.latLngToLayerPoint([d.lat, d.long]).x })
+            .attr("cy", function (d) { return map.latLngToLayerPoint([d.lat, d.long]).y })
             .attr("r", 6)
-            .style("fill", function(d) { return calcHeatColor(d.temp, minTemp, maxTemp) })
-            .attr("stroke", function(d) { return calcHeatColor(d.temp, minTemp, maxTemp) })
+            .style("fill", function (d) { return calcHeatColor(d.temp, minTemp, maxTemp) })
+            .attr("stroke", function (d) { return calcHeatColor(d.temp, minTemp, maxTemp) })
             .attr("stroke-width", 3)
             .attr("fill-opacity", .4);
     }

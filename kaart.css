@@ -1,3 +1,8 @@
+html {
+    width: 100%;
+    height: 100%;
+}
+
 .legend {
     line-height: 18px;
     color: #555;
