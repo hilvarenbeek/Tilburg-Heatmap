@@ -12,3 +12,7 @@ http://www.marcovandenhout.nl/Tilburg-Heatmap/
 * OpenStreetMap for the data used in the map tiles (http://openstreetmap.org)
 * D3 data visualisation library (https://d3js.org)
 * Color.js (https://github.com/Automattic/Color.js) JavaScript utility class for color calculations
+
+## See also:
+* https://github.com/meetjestad/mjs_data 
+* https://github.com/opendata-stuttgart/ and the website https://sensor.community/nl/ (formerly Luftdaten)
